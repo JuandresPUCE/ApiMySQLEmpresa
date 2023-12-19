@@ -1,0 +1,301 @@
+/*
+configurar archivo properties
+
+#configuraciones de la base de datos
+#base de datos creada en mysql nombre del esquema data_java
+spring.datasource.url=jdbc:mysql://localhost:3306/data_java
+#usuario de la base de datos y contraseña
+spring.datasource.username=root
+spring.datasource.password=admin
+
+#solo jpa
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+
+*/
+
+// model - modelo
+package com.puce.apisql.model;
+
+import jakarta.persistence.*;
+
+@Entity
+public class Producto {
+    //entidad con los productos
+    //ID, nombre, descripcion, precio
+    @Id
+    private int id;
+    private String nombre;
+    private String descripcion;
+    private double precio;
+    
+   //constructor con super() y parametros
+    public Producto(int id, String nombre, String descripcion, double precio) {
+        
+        super();
+        this.id = id;
+        this.nombre = nombre;
+        this.descripcion = descripcion;
+        this.precio = precio;
+    }
+    //constructor vacio
+    public Producto() {
+        
+        super();
+    }
+
+
+    //getters setters y constructor
+    public int getId() {
+        return id;
+    }
+    public void setId(int id) {
+        this.id = id;
+    }
+    public String getNombre() {
+        return nombre;
+    }
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+    public String getDescripcion() {
+        return descripcion;
+    }
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
+    }
+    public double getPrecio() {
+        return precio;
+    }
+    public void setPrecio(double precio) {
+        this.precio = precio;
+    }
+    //constructor
+    
+
+    
+}
+
+//repositorio
+
+package com.puce.apisql.repositories;
+
+import java.util.*;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.puce.apisql.models.Producto;
+//segundo crear el repositorio
+public interface ProductoRepository extends JpaRepository<Producto, Integer> {
+
+    //metodo para buscar por nombre
+    List<Producto> findByNombre(String nombre);
+    //metodo para buscar por precio
+    List<Producto> findByPrecio(double precio);
+    //metodo para buscar por precio menor o igual
+    List<Producto> findByPrecioLessThanEqual(double precio);
+    //metodo para buscar por precio mayor o igual
+    List<Producto> findByPrecioGreaterThanEqual(double precio);
+    //buscar nombre que contiene o empieza con
+    List<Producto> findByNombreContainingOrNombreStartingWith(String nombre, String nombre2);
+}
+
+
+//servicio 
+
+//tercero
+package com.puce.apisql.services;
+//tercero crear el servicio
+import java.util.*;
+
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+//importar modelo y repositorio
+import com.puce.apisql.models.Producto;
+import com.puce.apisql.repositories.ProductoRepository;
+
+//se requiere la anotacion @Service
+@Service
+public class ProductoService {
+    //inyectar el repositorio
+
+    @Autowired
+    //objeto de tipo ProductoRepository
+    private ProductoRepository productoRepository;
+
+    //para interactuar con la base de datos
+    //select
+    public List<Producto> listarProductos() {
+        //retornar todos los productos
+        return productoRepository.findAll();
+    }
+    //insert
+    public void guardarProducto (Producto producto) {
+        //guardar producto
+        productoRepository.save(producto);
+    }
+
+    //update
+    public void actualizarProducto (Producto producto) {
+        //actualizar producto
+        productoRepository.save(producto);
+    }
+    //delete
+    public void eliminarProducto (int id) {
+        //eliminar producto
+        productoRepository.deleteById(id);
+    }
+
+    //busquedas de productos por filtros
+    public List<Producto> buscarPorNombre (String nombre) {
+        //buscar por nombre
+        return productoRepository.findByNombre(nombre);
+    }
+
+    public List<Producto> buscarPorPrecio (double precio) {
+        //buscar por precio
+        return productoRepository.findByPrecio(precio);
+    }
+
+    public List<Producto> buscarPorMenorPrecio(double precio) {
+        //buscar por menor precio
+        return productoRepository.findByPrecioLessThanEqual(precio);
+    }
+    
+    public List<Producto> buscarPorMayorPrecio(double precio) {
+        //buscar por mayor precio
+        return productoRepository.findByPrecioGreaterThanEqual(precio);
+    }
+    //contiene o empieza con
+    public List<Producto> buscarPorNombreContiene (String nombre) {
+        //buscar por nombre que contiene o empieza con
+        return productoRepository.findByNombreContainingOrNombreStartingWith(nombre, nombre);
+    }    
+}
+
+//4to
+package com.puce.apisql.controllers;
+// es el 4to el controlador
+import java.util.*;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+
+//importar el modelo y el servicio
+import com.puce.apisql.models.Producto;
+import com.puce.apisql.services.ProductoService;
+
+    //rutas
+    @RestController
+    @RequestMapping("/api")
+
+public class ProductoController {
+    //inyectar el servicio    
+    @Autowired
+    //llamado del objeto
+    private ProductoService productoService;
+
+    //selects
+    @GetMapping("/productos")
+    public List<Producto> listarProductos() {
+        //retornar todos los productos
+        return productoService.listarProductos();
+    }
+    //producto por id
+    @GetMapping("/productos/{id}")
+    public ResponseEntity<Producto> obtenerProductoPorId(@PathVariable int id) {
+        //buscar producto por id
+        try{
+            Producto producto = productoService.obtenerProductoPorId(id);
+            return new ResponseEntity<Producto>(producto, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+
+    //insert por body
+    //metodo post
+    @PostMapping("/productos")
+    public Producto guardarProducto(@RequestBody Producto producto) {
+        //guardar producto
+        productoService.guardarProducto(producto);
+        return producto;
+    }
+
+    //borrar por id
+
+    @DeleteMapping("/productos/{id}")
+    public Producto eliminarProducto(@PathVariable int id) {
+        //eliminar producto
+        Producto producto = productoService.obtenerProductoPorId(id);
+        if (producto == null) {
+            throw new RuntimeException("Producto no encontrado -"+id);
+        }
+        productoService.eliminarProducto(id);
+        return producto;
+    }
+    //version simple borrar 
+    /*
+     * @DeleteMapping("/productos/{id}") 
+     * public void eliminarProducto(@PathVariable int id) { 
+     * Producto producto = productoService.obtenerProductoPorId(id);
+     * productoService.eliminarProducto(id);
+     * }
+     */
+    // actualizar por id
+    // metodo put
+     @PutMapping("/productos/{id}")
+     public Producto actualizaProducto(@RequestBody Producto producto, @PathVariable int id) {
+         //actualizar producto
+         productoService.actualizarProducto(producto);
+         Producto productoExistente = productoService.obtenerProductoPorId(id);
+         return productoExistente;
+     }
+     //Select por filtros
+    //buscar por nombre
+    @GetMapping("/productos/buscar/nombre/{nombre}")
+    public List<Producto> buscarPorNombre(@PathVariable String nombre) {
+        //buscar por nombre
+        return productoService.buscarPorNombre(nombre);
+    }
+    //buscar por precio
+     @GetMapping("/productos/buscar/precio/{precio}")
+        public List<Producto> buscarPorPrecio(@PathVariable double precio) {
+            //buscar por precio
+            return productoService.buscarPorPrecio(precio);
+        }
+    
+    //buscar por menor precio
+    @GetMapping("/productos/buscar/menorprecio/{precio}")
+    public List<Producto> buscarPorMenorPrecio(@PathVariable double precio) {
+        //buscar por menor precio
+        return productoService.buscarPorMenorPrecio(precio);
+    }
+    //buscar por mayor precio
+    @GetMapping("/productos/buscar/mayorprecio/{precio}")
+    public List<Producto> buscarPorMayorPrecio(@PathVariable double precio) {
+        //buscar por mayor precio
+        return productoService.buscarPorMayorPrecio(precio);
+    }
+    
+    //contiene o comienza con
+    @GetMapping("/productos/buscar/nombrecontiene/{nombre}")
+    public List<Producto> buscarPorNombreContiene(@PathVariable String nombre) {
+        //buscar por nombre que contiene o empieza con
+        return productoService.buscarPorNombreContiene(nombre);
+    }
+
+
+
+
+
+
+
+
+}
